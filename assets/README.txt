@@ -1,0 +1,1 @@
+Upload the chosen rider image into this folder and name it rider.jpg. The page reads it from assets/rider.jpg. The current project includes an animated fallback until the image is uploaded.
