@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SYI MOTO — 8 Second Ad</title>
+<style>
+:root{color-scheme:dark;--red:#ef233c;--white:#f7f7f7}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0%,#252a34 0,#090b10 55%,#050609 100%);font-family:Inter,Arial,sans-serif;color:var(--white);display:grid;place-items:center;padding:24px}
+.shell{width:min(100%,980px);display:grid;grid-template-columns:minmax(260px,420px) minmax(250px,1fr);gap:34px;align-items:center}
+.stage-wrap{width:100%;max-width:380px;margin:auto;position:relative}
+.stage{width:100%;aspect-ratio:9/16;border-radius:24px;overflow:hidden;background:#10131a;box-shadow:0 24px 90px #000b,0 0 0 1px #ffffff1a;position:relative}
+canvas{display:block;width:100%;height:100%}
+.stage:after{content:"";position:absolute;inset:0;border:1px solid #ffffff20;border-radius:24px;pointer-events:none}
+.eyebrow{font-size:11px;letter-spacing:.22em;color:#ff6677;text-transform:uppercase;font-weight:800}
+h1{font-size:clamp(32px,5vw,58px);line-height:.94;letter-spacing:-.055em;margin:12px 0 18px}
+h1 span{color:var(--red)}
+.copy{color:#adb4c2;line-height:1.65;max-width:440px;font-size:15px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+button{border:0;border-radius:999px;padding:13px 18px;font-size:13px;font-weight:800;letter-spacing:.02em;cursor:pointer}
+.primary{background:var(--red);color:white;box-shadow:0 8px 28px #ef233c50}
+.secondary{background:#ffffff12;color:white;border:1px solid #ffffff24}
+button:disabled{opacity:.5;cursor:wait}
+.note{font-size:12px;color:#838b99;line-height:1.6;margin-top:18px}
+.status{font-size:12px;color:#ffb6bf;margin-top:12px;min-height:18px}
+@media(max-width:720px){body{padding:18px}.shell{grid-template-columns:1fr;gap:24px}.stage-wrap{max-width:340px}.intro{text-align:center}.copy{margin:auto}.controls{justify-content:center}.note{text-align:center}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="stage-wrap" aria-label="Preview iklan motosikal">
+    <div class="stage"><canvas id="ad" width="1080" height="1920"></canvas></div>
+  </section>
+  <section class="intro">
+    <div class="eyebrow">8-second cinematic concept</div>
+    <h1>SYI <span>MOTO</span><br>RIDE BEYOND.</h1>
+    <p class="copy">Konsep iklan motosikal menegak 9:16 dengan pergerakan kamera, zoom sinematik, cahaya merah dan teks bergerak. Letakkan visual penunggang di folder <b>assets</b> untuk menggantikan latar demo.</p>
+    <div class="controls">
+      <button class="primary" id="preview">▶ Play preview</button>
+      <button class="secondary" id="export">↓ Export 8s video</button>
+    </div>
+    <div class="status" id="status" role="status"></div>
+    <p class="note">Export menghasilkan fail WebM melalui pelayar Chrome/Edge. Untuk fail MP4, import WebM ke CapCut dan export sebagai MP4. Ini ialah animasi iklan berasaskan satu visual, bukan rakaman AI yang menggerakkan wajah secara realistik.</p>
+  </section>
+</main>
+<script>
+(() => {
+  const canvas = document.getElementById('ad');
+  const ctx = canvas.getContext('2d');
+  const status = document.getElementById('status');
+  const previewBtn = document.getElementById('preview');
+  const exportBtn = document.getElementById('export');
+  const W = canvas.width, H = canvas.height, DURATION = 8000;
+  const rider = new Image();
+  rider.src = 'assets/rider.jpg';
+  let imageReady = false, running = false, startAt = 0, raf = 0;
+
+  rider.onload = () => { imageReady = true; draw(0); };
+  rider.onerror = () => { draw(0); status.textContent = 'Belum ada assets/rider.jpg — upload visual penunggang ke folder assets.'; };
+
+  function coverImage(t) {
+    const iw = rider.naturalWidth, ih = rider.naturalHeight;
+    const scale = Math.max(W / iw, H / ih) * (1.05 + .07 * t);
+    const sw = W / scale, sh = H / scale;
+    const focalX = iw * (.43 + .012 * Math.sin(t * Math.PI * 2));
+    const sx = Math.max(0, Math.min(iw - sw, focalX - sw / 2));
+    const sy = Math.max(0, Math.min(ih - sh, ih * .50 - sh / 2));
+    ctx.drawImage(rider, sx, sy, sw, sh, 0, 0, W, H);
+  }
+
+  function draw(t) {
+    ctx.clearRect(0,0,W,H);
+    if (imageReady) coverImage(t);
+    else {
+      const bg = ctx.createLinearGradient(0,0,W,H);
+      bg.addColorStop(0,'#343b4b'); bg.addColorStop(.48,'#171b25'); bg.addColorStop(1,'#050609');
+      ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+      ctx.save(); ctx.translate(W*.53,H*.55); ctx.rotate(-.16);
+      ctx.strokeStyle='#ef233c'; ctx.lineWidth=13; ctx.shadowColor='#ef233c'; ctx.shadowBlur=35;
+      ctx.beginPath(); ctx.ellipse(0,120,315,315,0,0,Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0,120,160,160,0,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='#e9edf5'; ctx.font='900 74px Arial'; ctx.textAlign='center'; ctx.fillText('RIDER VISUAL',0,90);
+      ctx.restore();
+    }
+
+    const shade = ctx.createLinearGradient(0,0,0,H);
+    shade.addColorStop(0,'rgba(3,5,9,.58)'); shade.addColorStop(.32,'rgba(3,5,9,0)'); shade.addColorStop(.68,'rgba(3,5,9,.12)'); shade.addColorStop(1,'rgba(3,5,9,.93)');
+    ctx.fillStyle=shade; ctx.fillRect(0,0,W,H);
+
+    // Moving light streaks
+    for(let i=0;i<5;i++){
+      const y = (H*(.36+i*.105) + ((t*H*.22 + i*190) % (H*.22))) % H;
+      ctx.save(); ctx.globalAlpha=.15 + .2*(1-t); ctx.strokeStyle=i%2?'#ff5268':'#ffffff'; ctx.lineWidth=i===2?5:2;
+      ctx.shadowColor='#ef233c'; ctx.shadowBlur=20; ctx.beginPath(); ctx.moveTo(-80,y); ctx.lineTo(W*.82,y-130); ctx.stroke(); ctx.restore();
+    }
+
+    // Branding and timed copy
+    ctx.save();
+    ctx.textAlign='left';
+    ctx.fillStyle='#ffffff'; ctx.font='800 42px Arial'; ctx.letterSpacing='8px'; ctx.fillText('SYI MOTO',76,118);
+    ctx.fillStyle='#ef233c'; ctx.fillRect(76,145,180,8);
+    ctx.shadowColor='#000'; ctx.shadowBlur=24;
+    let headline, sub;
+    if(t<.28){headline='OWN THE';sub='OPEN ROAD';}
+    else if(t<.68){headline='FEEL THE';sub='FREEDOM';}
+    else {headline='RIDE';sub='BEYOND LIMITS';}
+    ctx.fillStyle='#fff'; ctx.font='900 104px Arial'; ctx.fillText(headline,76, H-440);
+    ctx.fillStyle='#ef233c'; ctx.font='900 110px Arial'; ctx.fillText(sub,76,H-320);
+    ctx.fillStyle='rgba(255,255,255,.8)'; ctx.font='700 30px Arial'; ctx.letterSpacing='7px'; ctx.fillText('POWER • STYLE • PASSION',80,H-210);
+    ctx.restore();
+
+    // Progress line
+    ctx.fillStyle='rgba(255,255,255,.28)'; ctx.fillRect(76,H-106,W-152,5);
+    ctx.fillStyle='#ef233c'; ctx.fillRect(76,H-106,(W-152)*Math.min(1,t),5);
+    ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='600 26px Arial'; ctx.textAlign='right'; ctx.fillText('00:0'+Math.min(8,Math.floor(t*8))+' / 00:08',W-76,H-60);
+  }
+
+  function tick(now) {
+    if(!running) return;
+    const elapsed = now - startAt;
+    const t = Math.min(1, elapsed / DURATION);
+    draw(t);
+    if(elapsed < DURATION) raf = requestAnimationFrame(tick);
+    else { running=false; previewBtn.disabled=false; previewBtn.textContent='▶ Play preview'; draw(0); }
+  }
+
+  function play() {
+    cancelAnimationFrame(raf);
+    running=true; startAt=performance.now();
+    previewBtn.disabled=true; previewBtn.textContent='Playing…';
+    status.textContent='Preview sedang dimainkan.';
+    raf=requestAnimationFrame(tick);
+  }
+
+  previewBtn.addEventListener('click',play);
+
+  exportBtn.addEventListener('click', async () => {
+    if(!('MediaRecorder' in window) || !canvas.captureStream) {
+      status.textContent='Browser ini tidak menyokong eksport video. Cuba Chrome atau Edge terkini.';
+      return;
+    }
+    cancelAnimationFrame(raf); running=false;
+    exportBtn.disabled=true; previewBtn.disabled=true;
+    status.textContent='Sedang merakam animasi 8 saat…';
+    const stream=canvas.captureStream(30);
+    const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+    const chunks=[];
+    let recorder;
+    try {
+      recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+      recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+      recorder.onstop=()=>{
+        const blob=new Blob(chunks,{type:recorder.mimeType||'video/webm'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download='syi-moto-ad-8s.webm'; a.click();
+        setTimeout(()=>URL.revokeObjectURL(url),1500);
+        stream.getTracks().forEach(track=>track.stop());
+        exportBtn.disabled=false; previewBtn.disabled=false;
+        status.textContent='Siap! Video 8 saat telah dimuat turun sebagai WebM.';
+        draw(0);
+      };
+      startAt=performance.now();
+      const render=(now)=>{
+        const elapsed=now-startAt, t=Math.min(1,elapsed/DURATION);
+        draw(t);
+        if(elapsed<DURATION && recorder.state==='recording') requestAnimationFrame(render);
+      };
+      recorder.start(100); requestAnimationFrame(render);
+      setTimeout(()=>{if(recorder.state==='recording')recorder.stop();},DURATION+180);
+    } catch(err) {
+      stream.getTracks().forEach(track=>track.stop());
+      exportBtn.disabled=false; previewBtn.disabled=false;
+      status.textContent='Eksport gagal: '+err.message;
+    }
+  });
+
+  draw(0);
+})();
+</script>
+</body>
+</html>
